@@ -1,6 +1,7 @@
 -- @createDomain@ below generates a warning about orphan instances, but we like
 -- our code to be warning-free.
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module Chap3_3.Project where
 
