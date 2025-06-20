@@ -1,0 +1,8 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:simple-nix"
+    - path: "./bin/Clashi.hs"
+      component: "simple-nix:exe:clashi"
+    - path: "./bin/Clash.hs"
+      component: "simple-nix:exe:clash"
