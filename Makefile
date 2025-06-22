@@ -1,0 +1,2 @@
+repl:
+	clashi -isrc

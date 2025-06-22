@@ -11,12 +11,9 @@ let
     haskellPackages = pkgs.haskellPackages.override {
       overrides = self: super: {
         # Add overrides here
-        clash-prelude =
-          self.callCabal2nix "clash-prelude" (sources.clash-compiler + "/clash-prelude") {};
-        clash-lib =
-          self.callCabal2nix "clash-lib" (sources.clash-compiler + "/clash-lib") {};
-        clash-ghc =
-          self.callCabal2nix "clash-ghc" (sources.clash-compiler + "/clash-ghc") {};
+        clash-prelude = self.callCabal2nix "clash-prelude" (sources.clash-compiler + "/clash-prelude") {};
+        clash-lib = self.callCabal2nix "clash-lib" (sources.clash-compiler + "/clash-lib") {};
+        clash-ghc = self.callCabal2nix "clash-ghc" (sources.clash-compiler + "/clash-ghc") {};
       };
     };
   };

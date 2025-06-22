@@ -26,7 +26,7 @@ SystemVerilog or VHDL.
 However development itself is more streamlined by using a Nix shell. Start one
 by invoking:
 
-```
+```bash
 nix-shell
 ```
 
@@ -41,10 +41,16 @@ cabal run clash -- Example.Project --vhdl
 You can find the HDL files in `vhdl/`. The source can be found in `src/Example/Project.hs`.
 
 # REPL
-Clash offers a [REPL](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop) as a quick way to try things, similar to Python's `python` or Ruby's `irb`. Open the REPL by invoking:
 
+```bash
+clashi -isrc
 ```
-cabal run clashi
+
+and then, into the clashi repl, with the import path `src`
+
+```bash
+>>>:l Chap4_6.Project
+>>>:verilog
 ```
 
 # Adding custom dependencies / updating nix
