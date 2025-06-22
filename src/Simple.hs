@@ -39,7 +39,7 @@ module Simple
     (!!.),
     changed,
     integrate,
-    debounce,
+    -- debounce,
     riseEveryWhen,
     oscillateWhen,
     oneHot,
@@ -103,6 +103,8 @@ withEnableGen board clk rst = withClockResetEnable clk rst enableGen board
 oneHot :: forall n. (KnownNat n) => Index n -> Vec n Bool
 oneHot = reverse . bitCoerce . bit @(Unsigned n) . fromIntegral
 
+-- x0: 初值
+-- register x0 x 打一拍
 changed :: (HiddenClockResetEnable dom, Eq a, NFDataX a) => a -> Signal dom a -> Signal dom Bool
 changed x0 x = x ./=. register x0 x
 
@@ -115,18 +117,18 @@ integrate clear x = acc
   where
     acc = register mempty $ mux clear x $ mappend <$> acc <*> x
 
-debounce ::
-  forall ps a dom.
-  (Eq a, NFDataX a, HiddenClockResetEnable dom, KnownNat (ClockDivider dom ps)) =>
-  SNat ps ->
-  a ->
-  Signal dom a ->
-  Signal dom a
-debounce SNat start this = regEn start stable this
-  where
-    counter = register (0 :: Index (ClockDivider dom ps)) counterNext
-    counterNext = mux (changed start this) 0 (moreIdx <$> counter)
-    stable = counterNext .==. pure maxBound
+-- debounce ::
+--   forall ps a dom.
+--   (Eq a, NFDataX a, HiddenClockResetEnable dom, KnownNat (ClockDivider dom ps)) =>
+--   SNat ps ->
+--   a ->
+--   Signal dom a ->
+--   Signal dom a
+-- debounce SNat start this = regEn start stable this
+--   where
+--     counter = register (0 :: Index (ClockDivider dom ps)) counterNext
+--     counterNext = mux (changed start this) 0 (moreIdx <$> counter)
+--     stable = counterNext .==. pure maxBound
 
 roundRobin ::
   forall n dom a.
@@ -232,6 +234,7 @@ nextIdx = fromMaybe minBound . succIdx
 prevIdx :: (Eq a, Enum a, Bounded a) => a -> a
 prevIdx = fromMaybe maxBound . predIdx
 
+-- input: x, return x++, 如果 x 越界了，那么返回 maxBound :: typeof(x)
 moreIdx :: (Eq a, Enum a, Bounded a) => a -> a
 moreIdx = fromMaybe maxBound . succIdx
 
