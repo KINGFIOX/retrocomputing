@@ -88,6 +88,7 @@ library
   exposed-modules:
     Example.Project
     Chap2_3.Project
+    Chap5_4.Project
   default-language: Haskell2010
 
 -- Builds the executable 'clash', with simple-nix project in scope
