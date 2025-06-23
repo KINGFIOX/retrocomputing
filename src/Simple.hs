@@ -6,7 +6,6 @@
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
 {-# HLINT ignore "Unused LANGUAGE pragma" #-}
 {-# OPTIONS_GHC -Wno-unused-foralls #-}
 
@@ -43,7 +42,7 @@ module Simple
     riseEveryWhen,
     oscillateWhen,
     oneHot,
-    roundRobin,
+    -- roundRobin,
     countFromTo,
     nextIdx,
     prevIdx,
@@ -100,6 +99,8 @@ withEnableGen ::
   r
 withEnableGen board clk rst = withClockResetEnable clk rst enableGen board
 
+-- bit @(Unsigned n), @ 是 haskell 的一个拓展语法 TypeApplications, 用于指定输出的类型
+-- bitCoerce, "Coerce a value from one type to another through its bit representation."
 oneHot :: forall n. (KnownNat n) => Index n -> Vec n Bool
 oneHot = reverse . bitCoerce . bit @(Unsigned n) . fromIntegral
 
@@ -130,15 +131,15 @@ integrate clear x = acc
 --     counterNext = mux (changed start this) 0 (moreIdx <$> counter)
 --     stable = counterNext .==. pure maxBound
 
-roundRobin ::
-  forall n dom a.
-  (KnownNat n, HiddenClockResetEnable dom) =>
-  Signal dom Bool ->
-  (Signal dom (Vec n Bool), Signal dom (Index n))
-roundRobin next = (selector, i)
-  where
-    i = regEn (0 :: Index n) next $ nextIdx <$> i
-    selector = oneHot <$> i
+-- roundRobin ::
+--   forall n dom a.
+--   (KnownNat n, HiddenClockResetEnable dom) =>
+--   Signal dom Bool ->
+--   (Signal dom (Vec n Bool), Signal dom (Index n))
+-- roundRobin next = (selector, i)
+--   where
+--     i = regEn (0 :: Index n) next $ nextIdx <$> i
+--     selector = oneHot <$> i
 
 data Polarity = High | Low
   deriving (Show, Eq)
@@ -394,6 +395,7 @@ type Picoseconds (ps :: Nat) = ps
 
 type ClockDivider dom ps = ps `Div` DomainPeriod dom
 
+-- riseEvery: 每 n 个时钟周期产生一次脉冲
 risePeriod ::
   forall ps dom.
   (HiddenClockResetEnable dom, _) =>
@@ -401,6 +403,7 @@ risePeriod ::
   Signal dom Bool
 risePeriod _ = riseEvery (SNat @(ClockDivider dom ps))
 
+-- risePeriod: 每 n(ps) 时间间隔脉冲一次
 riseRate ::
   forall rate dom.
   (HiddenClockResetEnable dom, _) =>

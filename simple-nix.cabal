@@ -36,6 +36,7 @@ common common-options
     TypeFamilies
     TypeOperators
     ViewPatterns
+    ApplicativeDo
 
     -- TemplateHaskell is used to support convenience functions such as
     -- 'listToVecTH' and 'bLit'.
