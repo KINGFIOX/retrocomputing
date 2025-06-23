@@ -334,7 +334,7 @@ riseEveryWhen ::
   SNat n ->
   Signal dom Bool ->
   Signal dom Bool
-riseEveryWhen n trigger = isRising False $ cnt .==. pure maxBound
+riseEveryWhen _ trigger = isRising False $ cnt .==. pure maxBound
   where
     cnt = regEn (0 :: Index n) trigger (nextIdx <$> cnt)
 
@@ -343,9 +343,9 @@ oscillateWhen ::
   Bool ->
   Signal dom Bool ->
   Signal dom Bool
-oscillateWhen init trigger = r
+oscillateWhen init_ trigger = r
   where
-    r = regEn init trigger $ not <$> r
+    r = regEn init_ trigger $ not <$> r
 
 shifterL ::
   (BitPack a, HiddenClockResetEnable dom) =>

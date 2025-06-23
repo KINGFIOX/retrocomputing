@@ -85,7 +85,7 @@ topEntity ::
   "CLK100MHZ" ::: Clock System ->
   "SW" ::: Signal System (Vec 8 Bit) ->
   "SS" ::: Signal System (SevenSegment 4 High Low Low)
-topEntity = \clk -> withClockResetEnable clk resetGen enableGen board
+topEntity = withResetEnableGen board
   where
     board switches = driveSS toSegments digits
       where
