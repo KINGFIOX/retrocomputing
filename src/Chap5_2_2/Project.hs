@@ -41,16 +41,6 @@ encodeHexSS n = unpack $ case n of
   0xe -> 0b1001111
   0xf -> 0b1000111
 
-roundRobin ::
-  forall n dom a.
-  (KnownNat n, HiddenClockResetEnable dom) =>
-  Signal dom Bool ->
-  (Signal dom (Vec n Bool), Signal dom (Index n)) -- 返回 i 及其 oneHot 编码
-roundRobin next = (selector, i)
-  where
-    i = regEn (0 :: Index n) next $ nextIdx <$> i
-    selector = oneHot <$> i
-
 muxRR ::
   (KnownNat n, HiddenClockResetEnable dom) =>
   Signal dom Bool ->

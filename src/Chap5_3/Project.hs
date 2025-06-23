@@ -6,7 +6,6 @@
 
 module Chap5_3.Project where
 
-import Chap5_2_1.Project (roundRobin)
 import Clash.Prelude
 import Simple
 

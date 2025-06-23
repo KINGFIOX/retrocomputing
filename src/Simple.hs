@@ -38,11 +38,11 @@ module Simple
     (!!.),
     changed,
     integrate,
-    -- debounce,
+    debounce,
     riseEveryWhen,
     oscillateWhen,
     oneHot,
-    -- roundRobin,
+    roundRobin,
     countFromTo,
     nextIdx,
     prevIdx,
@@ -118,28 +118,28 @@ integrate clear x = acc
   where
     acc = register mempty $ mux clear x $ mappend <$> acc <*> x
 
--- debounce ::
---   forall ps a dom.
---   (Eq a, NFDataX a, HiddenClockResetEnable dom, KnownNat (ClockDivider dom ps)) =>
---   SNat ps ->
---   a ->
---   Signal dom a ->
---   Signal dom a
--- debounce SNat start this = regEn start stable this
---   where
---     counter = register (0 :: Index (ClockDivider dom ps)) counterNext
---     counterNext = mux (changed start this) 0 (moreIdx <$> counter)
---     stable = counterNext .==. pure maxBound
+debounce ::
+  forall ps a dom.
+  (Eq a, NFDataX a, HiddenClockResetEnable dom, KnownNat (ClockDivider dom ps)) =>
+  SNat ps ->
+  a ->
+  Signal dom a ->
+  Signal dom a
+debounce _ start this = regEn start stable this
+  where
+    counter = register (0 :: Index (ClockDivider dom ps)) counterNext
+    counterNext = mux (changed start this) 0 (moreIdx <$> counter)
+    stable = counterNext .==. pure maxBound
 
--- roundRobin ::
---   forall n dom a.
---   (KnownNat n, HiddenClockResetEnable dom) =>
---   Signal dom Bool ->
---   (Signal dom (Vec n Bool), Signal dom (Index n))
--- roundRobin next = (selector, i)
---   where
---     i = regEn (0 :: Index n) next $ nextIdx <$> i
---     selector = oneHot <$> i
+roundRobin ::
+  forall n dom a.
+  (KnownNat n, HiddenClockResetEnable dom) =>
+  Signal dom Bool ->
+  (Signal dom (Vec n Bool), Signal dom (Index n))
+roundRobin next = (selector, i)
+  where
+    i = regEn (0 :: Index n) next $ nextIdx <$> i
+    selector = oneHot <$> i
 
 data Polarity = High | Low
   deriving (Show, Eq)
