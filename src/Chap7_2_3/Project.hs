@@ -1,26 +1,25 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# OPTIONS_GHC -Wno-unused-foralls #-}
+
+{-# HLINT ignore "Functor law" #-}
 
 module Chap7_2_3.Project where
 
 import Clash.Prelude
+import Data.Maybe (isJust)
 import Simple
 
 -- 小梅哥 fpga vga https://www.bilibili.com/video/BV1izCYYqEoY
-
-data VGADriver dom w h = VGADriver
-  { vgaHSync :: Signal dom Bit,
-    vgaVSync :: Signal dom Bit,
-    vgaX :: Signal dom (Maybe (Index w)),
-    vgaY :: Signal dom (Maybe (Index h))
-  }
 
 -- vgaDriver :: (HiddenClockResetEnable dom, KnownNat w, KnownNat h) => VGATimings w h -> VGADriver dom w h
 -- vga640x480at60 :: VGATimings 640 480
@@ -54,13 +53,6 @@ data VGATimings (ps :: Nat) (w :: Nat) (h :: Nat) = VGATimings
     vgaVertTiming :: VGATiming h
   }
   deriving (Show)
-
-vga640x480at60 :: VGATimings (HzToPeriod 25_175_000) 640 480
-vga640x480at60 =
-  VGATimings
-    { vgaHorizTiming = VGATiming Low (SNat @16) (SNat @96) (SNat @48),
-      vgaVertTiming = VGATiming Low (SNat @11) (SNat @2) (SNat @31)
-    }
 
 visible :: VGAState visible front pulse back -> Maybe (Index visible)
 visible (Visible coord) = Just coord
@@ -106,6 +98,25 @@ vgaCounter (VGATiming _ front@SNat pulse@SNat back@SNat) =
     count :: (KnownNat n, KnownNat m) => (Index n -> a) -> (Index m -> a) -> Index n -> a
     count this next = maybe (next 0) this . succIdx
 
+data VGASync dom = VGASync
+  { vgaHSync :: "HSYNC" ::: Signal dom Bit,
+    vgaVSync :: "VSYNC" ::: Signal dom Bit,
+    vgaDE :: "DE" ::: Signal dom Bool -- display enable
+  }
+
+data VGAOut dom r g b = VGAOut
+  { vgaSync :: VGASync dom,
+    vgaR :: "RED" ::: Signal dom (Unsigned r),
+    vgaG :: "GREEN" ::: Signal dom (Unsigned g),
+    vgaB :: "BLUE" ::: Signal dom (Unsigned b)
+  }
+
+data VGADriver dom w h = VGADriver
+  { vgaSync :: VGASync dom, -- 重名字段, 注意, DuplicateRecordFields
+    vgaX :: Signal dom (Maybe (Index w)),
+    vgaY :: Signal dom (Maybe (Index h))
+  }
+
 vgaDriver ::
   (HiddenClockResetEnable dom, KnownNat w, KnownNat h) =>
   (DomainPeriod dom ~ ps) =>
@@ -119,6 +130,41 @@ vgaDriver VGATimings {..} =
         stateV = regEn (Visible 0) endLine $ nextV <$> stateV
         endLine = end <$> stateH
         vgaX = visible <$> stateH
-        vgaHSync = toActiveDyn (polarity vgaHorizTiming) . sync <$> stateH
         vgaY = visible <$> stateV
-        vgaVSync = toActiveDyn (polarity vgaVertTiming) . sync <$> stateV
+        vgaSync =
+          VGASync
+            { vgaDE = isJust <$> vgaX .&&. isJust <$> vgaY,
+              vgaVSync = toActiveDyn (polarity vgaVertTiming) . sync <$> stateV,
+              vgaHSync = toActiveDyn (polarity vgaHorizTiming) . sync <$> stateH
+            }
+
+vgaOut ::
+  (HiddenClockResetEnable dom, KnownNat r, KnownNat g, KnownNat b) =>
+  VGASync dom ->
+  Signal dom (Unsigned r, Unsigned g, Unsigned b) ->
+  VGAOut dom r g b
+vgaOut vgaSync@VGASync {..} rgb = VGAOut {..}
+  where
+    (vgaR, vgaG, vgaB) = unbundle $ blank rgb
+    blank = mux (not <$> vgaDE) $ pure (0, 0, 0)
+
+createDomain vSystem {vName = "Dom25", vPeriod = hzToPeriod 25_175_000}
+
+topEntity ::
+  "CLK_25MHZ" ::: Clock Dom25 ->
+  "RESET" ::: Reset Dom25 ->
+  "VGA" ::: VGAOut Dom25 8 8 8
+topEntity = withEnableGen board
+  where
+    -- There is no type annotation in the book. However, without this, the code would analyzed with error 🐛
+    board :: (HiddenClockResetEnable Dom25) => VGAOut Dom25 8 8 8
+    board = vgaOut vgaSync (pure (0, 0, 0))
+      where
+        VGADriver {..} = vgaDriver vga640x480at60
+
+vga640x480at60 :: VGATimings (HzToPeriod 25_175_000) 640 480
+vga640x480at60 =
+  VGATimings
+    { vgaHorizTiming = VGATiming Low (SNat @16) (SNat @96) (SNat @48),
+      vgaVertTiming = VGATiming Low (SNat @11) (SNat @2) (SNat @31)
+    }
