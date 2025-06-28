@@ -13,10 +13,10 @@
 
 {-# HLINT ignore "Functor law" #-}
 
-module Chap7_2_3.Project where
+module Chap8_2.Project where
 
 import Clash.Prelude
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Simple
 
 -- 小梅哥 fpga vga https://www.bilibili.com/video/BV1izCYYqEoY
@@ -150,6 +150,20 @@ vgaOut vgaSync@VGASync {..} rgb = VGAOut {..}
 
 createDomain vSystem {vName = "Dom25", vPeriod = hzToPeriod 25_175_000}
 
+rgbwBars1 ::
+  (KnownNat w, KnownNat h, KnownNat r, KnownNat g, KnownNat b) =>
+  (HiddenClockResetEnable dom) =>
+  Signal dom (Index w, Index h) ->
+  Signal dom (Unsigned r, Unsigned g, Unsigned b)
+rgbwBars1 _ = colors !!. counter
+  where
+    counter = register (0 :: Index 3) $ nextIdx <$> counter
+    colors = red :> green :> blue :> Nil
+      where
+        red = (maxBound, 0, 0)
+        green = (0, maxBound, 0)
+        blue = (0, 0, maxBound)
+
 topEntity ::
   "CLK_25MHZ" ::: Clock Dom25 ->
   "RESET" ::: Reset Dom25 ->
@@ -158,9 +172,14 @@ topEntity = withEnableGen board
   where
     -- There is no type annotation in the book. However, without this, the code would analyzed with error 🐛
     board :: (HiddenClockResetEnable Dom25) => VGAOut Dom25 8 8 8
-    board = vgaOut vgaSync (pure (0, 0, 0))
+    board = vgaOut vgaSync rgb
       where
         VGADriver {..} = vgaDriver vga640x480at60
+        xy = liftA2 (,) <$> vgaX <*> vgaY
+        -- 其实这里的 fromMaybe (0, 0) 只是为了取悦编译器, 这个 xy 能走进第一个分支, 自然也就不能是 Nothing
+        rgb = mux (isJust <$> xy) (rgbwBars1 (fromMaybe (0, 0) <$> xy)) $ pure black
+          where
+            black = (0, 0, 0)
 
 vga640x480at60 :: VGATimings (HzToPeriod 25_175_000) 640 480
 vga640x480at60 =

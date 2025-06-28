@@ -13,7 +13,7 @@
 
 {-# HLINT ignore "Functor law" #-}
 
-module Chap7_2_3.Project where
+module Chap8_1.Project where
 
 import Clash.Prelude
 import Data.Maybe (isJust)
@@ -150,6 +150,21 @@ vgaOut vgaSync@VGASync {..} rgb = VGAOut {..}
 
 createDomain vSystem {vName = "Dom25", vPeriod = hzToPeriod 25_175_000}
 
+rgbwBars ::
+  (KnownNat w, KnownNat h, KnownNat r, KnownNat g, KnownNat b) =>
+  (Index w, Index h) ->
+  (Unsigned r, Unsigned g, Unsigned b)
+rgbwBars (x, _) = case fromIntegral x :: Unsigned 2 of
+  0 -> red
+  1 -> green
+  2 -> blue
+  3 -> white
+  where
+    red = (maxBound, 0, 0)
+    green = (0, maxBound, 0)
+    blue = (0, 0, maxBound)
+    white = (maxBound, maxBound, maxBound)
+
 topEntity ::
   "CLK_25MHZ" ::: Clock Dom25 ->
   "RESET" ::: Reset Dom25 ->
@@ -158,9 +173,13 @@ topEntity = withEnableGen board
   where
     -- There is no type annotation in the book. However, without this, the code would analyzed with error 🐛
     board :: (HiddenClockResetEnable Dom25) => VGAOut Dom25 8 8 8
-    board = vgaOut vgaSync (pure (0, 0, 0))
+    board = vgaOut vgaSync rgb
       where
         VGADriver {..} = vgaDriver vga640x480at60
+        xy = liftA2 (,) <$> vgaX <*> vgaY
+        rgb = maybe black rgbwBars <$> xy
+          where
+            black = (0, 0, 0)
 
 vga640x480at60 :: VGATimings (HzToPeriod 25_175_000) 640 480
 vga640x480at60 =
