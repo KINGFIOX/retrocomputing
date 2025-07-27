@@ -104,8 +104,6 @@ withEnableGen board clk rst = withClockResetEnable clk rst enableGen board
 oneHot :: forall n. (KnownNat n) => Index n -> Vec n Bool
 oneHot = reverse . bitCoerce . bit @(Unsigned n) . fromIntegral
 
--- x0: 初值
--- register x0 x 打一拍
 changed :: (HiddenClockResetEnable dom, Eq a, NFDataX a) => a -> Signal dom a -> Signal dom Bool
 changed x0 x = x ./=. register x0 x
 
