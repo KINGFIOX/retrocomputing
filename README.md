@@ -55,3 +55,5 @@ and then, into the clashi repl, with the import path `src`
 
 # Adding custom dependencies / updating nix
 `niv` is available after opening `nix-shell`. See [niv on Hackage](https://hackage.haskell.org/package/niv) for more information.
+
+[retroclash-lib](https://hackage.haskell.org/package/retroclash-lib)
